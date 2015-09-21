@@ -51,6 +51,7 @@ from utils import getUserId
 EMAIL_SCOPE = endpoints.EMAIL_SCOPE
 API_EXPLORER_CLIENT_ID = endpoints.API_EXPLORER_CLIENT_ID
 MEMCACHE_ANNOUNCEMENTS_KEY = "RECENT_ANNOUNCEMENTS"
+MEMCACHE_FEATURED_SPEAKER_KEY = "FEATURED_SPEAKER"
 ANNOUNCEMENT_TPL = ('Last chance to attend! The following conferences '
                     'are nearly sold out: %s')
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -411,7 +412,7 @@ class ConferenceApi(remote.Service):
                 sp_id = Speaker.allocate_ids(size=1)[0]
                 sp_key = ndb.Key(Speaker, sp_id)
                 Speaker(name=data['speaker']).put()
-                data['speakerId'] = sp_id
+                data['speakerId'] = sp_key.urlsafe()
             else:
                 data['speakerId'] = speaker.key.urlsafe()
             del data['speaker']
@@ -422,6 +423,9 @@ class ConferenceApi(remote.Service):
         data['key'] = s_key
 
         Session(**data).put()
+        taskqueue.add(
+            url='/tasks/set_featured_speaker'
+        )
         return self._copySessionToForm(s_key.get())
 
     @endpoints.method(SESSION_POST_REQUEST, SessionForm,
@@ -472,6 +476,35 @@ class ConferenceApi(remote.Service):
         sessions = Session.query(Session.speakerId == speaker.key.urlsafe())
         return SessionForms(
             items=[self._copySessionToForm(sess) for sess in sessions]
+        )
+
+# - - - Featured Speaker - - - - - - - - - - - - - - - - - - -
+
+    @staticmethod
+    def _cacheSpeaker():
+        speakers = Speaker.query()
+        featured_speaker = ''
+        max_sessions = 0
+        for speaker in speakers:
+            total_sessions = Session.query(
+                Session.speakerId == speaker.key.urlsafe()
+            ).count()
+            if total_sessions > max_sessions:
+                max_sessions = total_sessions
+                featured_speaker = speaker.name
+
+        feature = 'Featured Speaker: %s' % featured_speaker
+        memcache.set(MEMCACHE_FEATURED_SPEAKER_KEY, feature)
+
+        return feature
+
+    @endpoints.method(message_types.VoidMessage, StringMessage,
+            path='conference/featured_speaker/get',
+            http_method='GET', name='getFeaturedSpeaker')
+    def getFeaturedSpeaker(self, request):
+        """Return Featured Speaker from memcache."""
+        return StringMessage(
+            data=memcache.get(MEMCACHE_FEATURED_SPEAKER_KEY) or ""
         )
 
 # - - - Wishlist - - - - - - - - - - - - - - - - - - - - - - -
