@@ -1,8 +1,6 @@
 # coding: utf-8
 
 import endpoints
-from google.appengine.api import memcache
-from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
 import models
@@ -17,7 +15,9 @@ def copyProfileToForm(prof):
         if hasattr(prof, field.name):
             # convert t-shirt string to Enum; just copy others
             if field.name == 'teeShirtSize':
-                setattr(pf, field.name, getattr(models.TeeShirtSize, getattr(prof, field.name)))
+                setattr(pf, field.name,
+                        getattr(models.TeeShirtSize,
+                                getattr(prof, field.name)))
             else:
                 setattr(pf, field.name, getattr(prof, field.name))
     pf.check_initialized()
@@ -38,10 +38,10 @@ def getProfileFromUser():
     # create new Profile if not there
     if not profile:
         profile = models.Profile(
-            key = p_key,
-            displayName = user.nickname(),
-            mainEmail= user.email(),
-            teeShirtSize = str(models.TeeShirtSize.NOT_SPECIFIED),
+            key=p_key,
+            displayName=user.nickname(),
+            mainEmail=user.email(),
+            teeShirtSize=str(models.TeeShirtSize.NOT_SPECIFIED)
         )
         profile.put()
 

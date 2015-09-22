@@ -1,12 +1,8 @@
 # coding: utf-8
 
-import endpoints
 from google.appengine.api import memcache
-from google.appengine.api import taskqueue
-from google.appengine.ext import ndb
 
 import models
-import utils
 
 
 MEMCACHE_FEATURED_SPEAKER_KEY = "FEATURED_SPEAKER"

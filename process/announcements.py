@@ -1,13 +1,9 @@
 # coding: utf-8
 
-import endpoints
 from google.appengine.api import memcache
-from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
 import models
-import process.profiles
-import utils
 
 
 MEMCACHE_ANNOUNCEMENTS_KEY = "RECENT_ANNOUNCEMENTS"

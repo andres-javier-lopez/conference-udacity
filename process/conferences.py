@@ -1,7 +1,8 @@
 # coding: utf-8
 
+from datetime import datetime
+
 import endpoints
-from google.appengine.api import memcache
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
@@ -14,7 +15,23 @@ DEFAULTS = {
     "city": "Default City",
     "maxAttendees": 0,
     "seatsAvailable": 0,
-    "topics": [ "Default", "Topic" ],
+    "topics": ["Default", "Topic"]
+}
+
+OPERATORS = {
+    'EQ': '=',
+    'GT': '>',
+    'GTEQ': '>=',
+    'LT': '<',
+    'LTEQ': '<=',
+    'NE': '!='
+}
+
+FIELDS = {
+    'CITY': 'city',
+    'TOPIC': 'topics',
+    'MONTH': 'month',
+    'MAX_ATTENDEES': 'maxAttendees',
 }
 
 def copyConferenceToForm(conf, displayName):
@@ -47,7 +64,9 @@ def createConferenceObject(request):
         raise endpoints.BadRequestException("Conference 'name' field required")
 
     # copy ConferenceForm/ProtoRPC Message into dict
-    data = {field.name: getattr(request, field.name) for field in request.all_fields()}
+    data = {}
+    for field in request.all_fields():
+        data[field.name] = getattr(request, field.name)
     del data['websafeKey']
     del data['organizerDisplayName']
 
@@ -59,12 +78,16 @@ def createConferenceObject(request):
 
     # convert dates from strings to Date objects; set month based on start_date
     if data['startDate']:
-        data['startDate'] = datetime.strptime(data['startDate'][:10], "%Y-%m-%d").date()
+        data['startDate'] = datetime.strptime(
+            data['startDate'][:10], "%Y-%m-%d"
+        ).date()
         data['month'] = data['startDate'].month
     else:
         data['month'] = 0
     if data['endDate']:
-        data['endDate'] = datetime.strptime(data['endDate'][:10], "%Y-%m-%d").date()
+        data['endDate'] = datetime.strptime(
+            data['endDate'][:10], "%Y-%m-%d"
+        ).date()
 
     # set seatsAvailable to be same as maxAttendees on creation
     if data["maxAttendees"] > 0:
@@ -95,7 +118,9 @@ def updateConferenceObject(request):
     user_id = utils.getUserId(user)
 
     # copy ConferenceForm/ProtoRPC Message into dict
-    data = {field.name: getattr(request, field.name) for field in request.all_fields()}
+    data = {}
+    for field in request.all_fields():
+        data[field.name] = getattr(request, field.name)
 
     # update existing conference
     conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
@@ -142,7 +167,9 @@ def getQuery(request):
     for filtr in filters:
         if filtr["field"] in ["month", "maxAttendees"]:
             filtr["value"] = int(filtr["value"])
-        formatted_query = ndb.query.FilterNode(filtr["field"], filtr["operator"], filtr["value"])
+        formatted_query = ndb.query.FilterNode(
+            filtr["field"], filtr["operator"], filtr["value"]
+        )
         q = q.filter(formatted_query)
     return q
 
@@ -159,15 +186,20 @@ def formatFilters(filters):
             filtr["field"] = FIELDS[filtr["field"]]
             filtr["operator"] = OPERATORS[filtr["operator"]]
         except KeyError:
-            raise endpoints.BadRequestException("Filter contains invalid field or operator.")
+            raise endpoints.BadRequestException(
+                "Filter contains invalid field or operator."
+            )
 
         # Every operation except "=" is an inequality
         if filtr["operator"] != "=":
             # check if inequality operation has been used in previous filters
-            # disallow the filter if inequality was performed on a different field before
+            # disallow the filter if inequality was performed on a different
+            # field before
             # track the field on which the inequality operation is performed
             if inequality_field and inequality_field != filtr["field"]:
-                raise endpoints.BadRequestException("Inequality filter is allowed on only one field.")
+                raise endpoints.BadRequestException(
+                    "Inequality filter is allowed on only one field."
+                )
             else:
                 inequality_field = filtr["field"]
 

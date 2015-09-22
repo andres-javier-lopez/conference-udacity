@@ -1,7 +1,8 @@
 # coding: utf-8
 
+from datetime import datetime
+
 import endpoints
-from google.appengine.api import memcache
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
@@ -11,7 +12,7 @@ import utils
 
 def copySessionToForm(sess):
     """Copy relevant fields from Session to SessionForm."""
-    ss= models.SessionForm()
+    ss = models.SessionForm()
     for field in ss.all_fields():
         if hasattr(sess, field.name):
             # convert Date to date string; just copy others
@@ -40,7 +41,9 @@ def createSessionObject(request):
         raise endpoints.BadRequestException("Session 'name' field required")
 
     # copy SessionForm/ProtoRPC Message into dict
-    data = {field.name: getattr(request, field.name) for field in request.all_fields()}
+    data = {}
+    for field in request.all_fields():
+        data[field.name] = getattr(request, field.name)
     del data['websafeConferenceKey']
     del data['websafeKey']
 
@@ -61,10 +64,12 @@ def createSessionObject(request):
         data['date'] = datetime.strptime(data['date'][:10], "%Y-%m-%d").date()
 
     if data['speaker']:
-        speaker = models.Speaker.query(models.Speaker.name == data['speaker']).get()
+        speaker = models.Speaker.query(
+            models.Speaker.name == data['speaker']
+        ).get()
         if not speaker:
             sp_id = models.Speaker.allocate_ids(size=1)[0]
-            sp_key = ndb.Key(Speaker, sp_id)
+            sp_key = ndb.Key(models.Speaker, sp_id)
             models.Speaker(name=data['speaker']).put()
             data['speakerId'] = sp_key.urlsafe()
         else:
