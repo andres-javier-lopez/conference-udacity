@@ -248,24 +248,6 @@ class ConferenceApi(remote.Service):
 
 # - - - Featured Speaker - - - - - - - - - - - - - - - - - - -
 
-    @staticmethod
-    def _cacheSpeaker():
-        speakers = Speaker.query()
-        featured_speaker = ''
-        max_sessions = 0
-        for speaker in speakers:
-            total_sessions = Session.query(
-                Session.speakerId == speaker.key.urlsafe()
-            ).count()
-            if total_sessions > max_sessions:
-                max_sessions = total_sessions
-                featured_speaker = speaker.name
-
-        feature = 'Featured Speaker: %s' % featured_speaker
-        memcache.set(MEMCACHE_FEATURED_SPEAKER_KEY, feature)
-
-        return feature
-
     @endpoints.method(message_types.VoidMessage, StringMessage,
             path='conference/featured_speaker/get',
             http_method='GET', name='getFeaturedSpeaker')
