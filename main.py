@@ -21,7 +21,7 @@ import process.speakers
 class SetAnnouncementHandler(webapp2.RequestHandler):
     def get(self):
         """Set Announcement in Memcache."""
-        process.announcemets.cacheAnnouncement()
+        process.announcements.cacheAnnouncement()
         self.response.set_status(204)
 
 
