@@ -9,6 +9,9 @@ import models
 import utils
 
 
+MEMCACHE_FEATURED_SPEAKER_KEY = "FEATURED_SPEAKER"
+
+
 def cacheSpeaker():
     speakers = models.Speaker.query()
     featured_speaker = ''
