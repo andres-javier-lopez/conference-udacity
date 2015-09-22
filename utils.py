@@ -64,6 +64,28 @@ def getUserId(user, id_type="email"):
             return str(uuid.uuid1().get_hex())
 
 
+def getQuery(request, model):
+    """Return formatted query from the submitted filters."""
+    q = model.query()
+    inequality_filter, filters = formatFilters(request.filters)
+
+    # If exists, sort on inequality filter first
+    if not inequality_filter:
+        q = q.order(model.name)
+    else:
+        q = q.order(ndb.GenericProperty(inequality_filter))
+        q = q.order(model.name)
+
+    for filtr in filters:
+        if filtr["field"] in ["month", "maxAttendees"]:
+            filtr["value"] = int(filtr["value"])
+        formatted_query = ndb.query.FilterNode(
+            filtr["field"], filtr["operator"], filtr["value"]
+        )
+        q = q.filter(formatted_query)
+    return q
+
+
 def formatFilters(filters):
     """Parse, check validity and format user supplied filters."""
     formatted_filters = []

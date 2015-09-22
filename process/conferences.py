@@ -138,25 +138,8 @@ def updateConferenceObject(request):
 
 
 def getQuery(request):
-    """Return formatted query from the submitted filters."""
-    q = models.Conference.query()
-    inequality_filter, filters = utils.formatFilters(request.filters)
-
-    # If exists, sort on inequality filter first
-    if not inequality_filter:
-        q = q.order(models.Conference.name)
-    else:
-        q = q.order(ndb.GenericProperty(inequality_filter))
-        q = q.order(models.Conference.name)
-
-    for filtr in filters:
-        if filtr["field"] in ["month", "maxAttendees"]:
-            filtr["value"] = int(filtr["value"])
-        formatted_query = ndb.query.FilterNode(
-            filtr["field"], filtr["operator"], filtr["value"]
-        )
-        q = q.filter(formatted_query)
-    return q
+    """Return formatted query for conferences."""
+    return utils.getQuery(request, models.Conference)
 
 
 @ndb.transactional(xg=True)

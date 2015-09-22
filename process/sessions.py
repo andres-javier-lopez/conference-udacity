@@ -86,3 +86,8 @@ def createSessionObject(request):
         url='/tasks/set_featured_speaker'
     )
     return copySessionToForm(s_key.get())
+
+
+def getQuery(request):
+    """Return formatted query for sessions."""
+    return utils.getQuery(request, models.Session)
