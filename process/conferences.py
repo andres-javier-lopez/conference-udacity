@@ -6,6 +6,7 @@ from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
 import models
+import process.profiles
 import utils
 
 
@@ -172,3 +173,52 @@ def formatFilters(filters):
 
         formatted_filters.append(filtr)
     return (inequality_field, formatted_filters)
+
+
+@ndb.transactional(xg=True)
+def conferenceRegistration(request, reg=True):
+    """Register or unregister user for selected conference."""
+    retval = None
+    prof = process.profiles.getProfileFromUser() # get user Profile
+
+    # check if conf exists given websafeConfKey
+    # get conference; check that it exists
+    wsck = request.websafeConferenceKey
+    conf = ndb.Key(urlsafe=wsck).get()
+    if not conf:
+        raise endpoints.NotFoundException(
+            'No conference found with key: %s' % wsck)
+
+    # register
+    if reg:
+        # check if user already registered otherwise add
+        if wsck in prof.conferenceKeysToAttend:
+            raise models.ConflictException(
+                "You have already registered for this conference")
+
+        # check if seats avail
+        if conf.seatsAvailable <= 0:
+            raise models.ConflictException(
+                "There are no seats available.")
+
+        # register user, take away one seat
+        prof.conferenceKeysToAttend.append(wsck)
+        conf.seatsAvailable -= 1
+        retval = True
+
+    # unregister
+    else:
+        # check if user already registered
+        if wsck in prof.conferenceKeysToAttend:
+
+            # unregister user, add back one seat
+            prof.conferenceKeysToAttend.remove(wsck)
+            conf.seatsAvailable += 1
+            retval = True
+        else:
+            retval = False
+
+    # write things back to the datastore & return
+    prof.put()
+    conf.put()
+    return models.BooleanMessage(data=retval)
