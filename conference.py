@@ -12,19 +12,14 @@ created by wesc on 2014 apr 21
 
 __author__ = 'wesc+api@google.com (Wesley Chun)'
 
-
-from datetime import datetime
-
 import endpoints
 from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
 
 from google.appengine.api import memcache
-from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
-from models import ConflictException
 from models import Profile
 from models import ProfileMiniForm
 from models import ProfileForm
@@ -33,9 +28,7 @@ from models import BooleanMessage
 from models import Conference
 from models import ConferenceForm
 from models import ConferenceForms
-from models import ConferenceQueryForm
 from models import ConferenceQueryForms
-from models import TeeShirtSize
 from models import Session
 from models import SessionForm
 from models import SessionForms
@@ -60,23 +53,6 @@ EMAIL_SCOPE = endpoints.EMAIL_SCOPE
 API_EXPLORER_CLIENT_ID = endpoints.API_EXPLORER_CLIENT_ID
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
-OPERATORS = {
-            'EQ':   '=',
-            'GT':   '>',
-            'GTEQ': '>=',
-            'LT':   '<',
-            'LTEQ': '<=',
-            'NE':   '!='
-            }
-
-FIELDS =    {
-            'CITY': 'city',
-            'TOPIC': 'topics',
-            'MONTH': 'month',
-            'MAX_ATTENDEES': 'maxAttendees',
-            }
 
 CONF_GET_REQUEST = endpoints.ResourceContainer(
     message_types.VoidMessage,
@@ -113,7 +89,8 @@ SESSION_GET_REQUEST = endpoints.ResourceContainer(
 
 
 @endpoints.api(name='conference', version='v1', audiences=[ANDROID_AUDIENCE],
-    allowed_client_ids=[WEB_CLIENT_ID, API_EXPLORER_CLIENT_ID, ANDROID_CLIENT_ID, IOS_CLIENT_ID],
+    allowed_client_ids=[WEB_CLIENT_ID, API_EXPLORER_CLIENT_ID,
+                        ANDROID_CLIENT_ID, IOS_CLIENT_ID],
     scopes=[EMAIL_SCOPE])
 class ConferenceApi(remote.Service):
     """Conference API v0.1"""
@@ -146,11 +123,14 @@ class ConferenceApi(remote.Service):
         # get Conference object from request; bail if not found
         conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
         if not conf:
-            raise endpoints.NotFoundException(
-                'No conference found with key: %s' % request.websafeConferenceKey)
+            raise endpoints.NotFoundException((
+                'No conference found with key: %s'
+            )% request.websafeConferenceKey)
         prof = conf.key.parent().get()
         # return ConferenceForm
-        return process.conferences.copyConferenceToForm(conf, getattr(prof, 'displayName'))
+        return process.conferences.copyConferenceToForm(
+            conf, getattr(prof, 'displayName')
+        )
 
 
     @endpoints.method(message_types.VoidMessage, ConferenceForms,
@@ -169,7 +149,11 @@ class ConferenceApi(remote.Service):
         prof = ndb.Key(Profile, user_id).get()
         # return set of ConferenceForm objects per Conference
         return ConferenceForms(
-            items=[process.conferences.copyConferenceToForm(conf, getattr(prof, 'displayName')) for conf in confs]
+            items=[
+                process.conferences.copyConferenceToForm(
+                    conf, getattr(prof, 'displayName')
+                ) for conf in confs
+            ]
         )
 
     @endpoints.method(ConferenceQueryForms, ConferenceForms,
@@ -182,7 +166,9 @@ class ConferenceApi(remote.Service):
 
         # need to fetch organiser displayName from profiles
         # get all keys and use get_multi for speed
-        organizers = [(ndb.Key(Profile, conf.organizerUserId)) for conf in conferences]
+        organizers = [
+            (ndb.Key(Profile, conf.organizerUserId)) for conf in conferences
+        ]
         profiles = ndb.get_multi(organizers)
 
         # put display names in a dict for easier fetching
@@ -192,8 +178,11 @@ class ConferenceApi(remote.Service):
 
         # return individual ConferenceForm object per Conference
         return ConferenceForms(
-                items=[process.conferences.copyConferenceToForm(conf, names[conf.organizerUserId]) for conf in \
-                conferences]
+            items=[
+                process.conferences.copyConferenceToForm(
+                    conf, names[conf.organizerUserId]
+                ) for conf in conferences
+            ]
         )
 
 # - - - Session objects - - - - - - - - - - - - - - - - - - -
@@ -211,26 +200,38 @@ class ConferenceApi(remote.Service):
         c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
         if not c_key.get():
             raise endpoints.NotFoundException(
-                'No conference found with key: %s' % request.websafeConferenceKey)
+                (
+                    'No conference found with key: %s'
+                ) % request.websafeConferenceKey
+            )
         sessions = Session.query(ancestor=c_key)
         return SessionForms(
-            items=[process.sessions.copySessionToForm(sess) for sess in sessions]
+            items=[
+                process.sessions.copySessionToForm(sess) for sess in sessions
+            ]
         )
 
-    @endpoints.method(SESSION_QUERY_REQUEST, SessionForms,
-                      path='conference/{websafeConferenceKey}/sessions/{typeOfSession}',
-                      http_method='GET', name='getConferenceSessionsByType')
+    @endpoints.method(
+        SESSION_QUERY_REQUEST, SessionForms,
+        path='conference/{websafeConferenceKey}/sessions/{typeOfSession}',
+        http_method='GET', name='getConferenceSessionsByType'
+    )
     def getConferenceSessionsByType(self, request):
         c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
         if not c_key.get():
             raise endpoints.NotFoundException(
-                'No conference found with key: %s' % request.websafeConferenceKey)
+                (
+                    'No conference found with key: %s'
+                ) % request.websafeConferenceKey
+            )
         sessions = Session.query(ancestor=c_key)
         sessions = sessions.filter(
             Session.typeOfSession == request.typeOfSession
         )
         return SessionForms(
-            items=[process.sessions.copySessionToForm(sess) for sess in sessions]
+            items=[
+                process.sessions.copySessionToForm(sess) for sess in sessions
+            ]
         )
 
     @endpoints.method(SESSION_SPEAKER_REQUEST, SessionForms,
@@ -245,7 +246,9 @@ class ConferenceApi(remote.Service):
 
         sessions = Session.query(Session.speakerId == speaker.key.urlsafe())
         return SessionForms(
-            items=[process.sessions.copySessionToForm(sess) for sess in sessions]
+            items=[
+                process.sessions.copySessionToForm(sess) for sess in sessions
+            ]
         )
 
 # - - - Featured Speaker - - - - - - - - - - - - - - - - - - -
@@ -286,7 +289,9 @@ class ConferenceApi(remote.Service):
         sess_keys = [ndb.Key(urlsafe=wsck) for wsck in prof.sessionsWishlist]
         sessions = ndb.get_multi(sess_keys)
         return SessionForms(
-            items=[process.sessions.copySessionToForm(sess) for sess in sessions]
+            items=[
+                process.sessions.copySessionToForm(sess) for sess in sessions
+            ]
         )
 
 # - - - Profile objects - - - - - - - - - - - - - - - - - - -
@@ -311,7 +316,9 @@ class ConferenceApi(remote.Service):
             http_method='GET', name='getAnnouncement')
     def getAnnouncement(self, request):
         """Return Announcement from memcache."""
-        return StringMessage(data=memcache.get(MEMCACHE_ANNOUNCEMENTS_KEY) or "")
+        return StringMessage(
+            data=memcache.get(MEMCACHE_ANNOUNCEMENTS_KEY) or ""
+        )
 
 
 # - - - Registration - - - - - - - - - - - - - - - - - - - -
@@ -322,11 +329,15 @@ class ConferenceApi(remote.Service):
     def getConferencesToAttend(self, request):
         """Get list of conferences that user has registered for."""
         prof = process.profiles.getProfileFromUser() # get user Profile
-        conf_keys = [ndb.Key(urlsafe=wsck) for wsck in prof.conferenceKeysToAttend]
+        conf_keys = [
+            ndb.Key(urlsafe=wsck) for wsck in prof.conferenceKeysToAttend
+        ]
         conferences = ndb.get_multi(conf_keys)
 
         # get organizers
-        organisers = [ndb.Key(Profile, conf.organizerUserId) for conf in conferences]
+        organisers = [
+            ndb.Key(Profile, conf.organizerUserId) for conf in conferences
+        ]
         profiles = ndb.get_multi(organisers)
 
         # put display names in a dict for easier fetching
@@ -335,8 +346,10 @@ class ConferenceApi(remote.Service):
             names[profile.key.id()] = profile.displayName
 
         # return set of ConferenceForm objects per Conference
-        return ConferenceForms(items=[process.conferences.copyConferenceToForm(conf, names[conf.organizerUserId])\
-         for conf in conferences]
+        return ConferenceForms(
+            items=[process.conferences.copyConferenceToForm(
+                conf, names[conf.organizerUserId]
+            ) for conf in conferences]
         )
 
 
@@ -367,12 +380,15 @@ class ConferenceApi(remote.Service):
         # value = "London"
         # f = ndb.query.FilterNode(field, operator, value)
         # q = q.filter(f)
-        q = q.filter(Conference.city=="London")
-        q = q.filter(Conference.topics=="Medical Innovations")
-        q = q.filter(Conference.month==6)
+        q = q.filter(Conference.city == "London")
+        q = q.filter(Conference.topics == "Medical Innovations")
+        q = q.filter(Conference.month == 6)
 
         return ConferenceForms(
-            items=[process.conferences.copyConferenceToForm(conf, "") for conf in q]
+            items=[
+                process.conferences.copyConferenceToForm(conf,
+                                                         "") for conf in q
+            ]
         )
 
 
