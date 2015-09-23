@@ -121,6 +121,13 @@ class Session(ndb.Model):
     startTime = ndb.IntegerProperty()
 
 
+class SessionQueryForm(messages.Message):
+    """SessionQueryForm -- Session query inbound form message"""
+    field = messages.StringField(1)
+    operator = messages.StringField(2)
+    value = messages.StringField(3)
+
+
 class Speaker(ndb.Model):
     name = ndb.StringProperty(required=True)
 

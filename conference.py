@@ -34,6 +34,7 @@ from models import ConferenceQueryForms
 from models import Session
 from models import SessionForm
 from models import SessionForms
+from models import SessionQueryForm
 from models import Speaker
 
 from settings import WEB_CLIENT_ID
@@ -85,6 +86,17 @@ SESSION_SPEAKER_REQUEST = endpoints.ResourceContainer(
 SESSION_GET_REQUEST = endpoints.ResourceContainer(
     message_types.VoidMessage,
     websafeSessionKey=messages.StringField(1)
+)
+
+SESSION_DATE_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    date=messages.StringField(1)
+)
+
+SESSION_DURATION_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    start_duration=messages.IntegerField(1),
+    end_duration=messages.IntegerField(2)
 )
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -254,6 +266,9 @@ class ConferenceApi(remote.Service):
             ]
         )
 
+    @endpoints.method(SESSION_DATE_REQUEST, SessionForms,
+                      path='conference/sessions/date',
+                      http_method='GET', name='getSessionsByDate')
     def getSessionsByDate(self, request):
         """List of sessions on the selected date."""
         sessions = Session.query()
@@ -269,6 +284,9 @@ class ConferenceApi(remote.Service):
             ]
         )
 
+    @endpoints.method(SESSION_DURATION_REQUET, SessionForms,
+                      path='conference/sessions/duration',
+                      http_method='GET', name='getSessionsByDuration')
     def getSessionsByDuration(self, request):
         """List of sessions within the specified duration."""
         sessions = Session.query()
@@ -286,6 +304,9 @@ class ConferenceApi(remote.Service):
             ]
         )
 
+    @endpoints.method(SessionQueryForm, SessionForms,
+                      path='conference/sessions/query',
+                      http_method='GET', name='querySessions')
     def querySessions(self, request):
         """Query sessions with user provided filters"""
         sessions = process.sessions.getQuery(request)
