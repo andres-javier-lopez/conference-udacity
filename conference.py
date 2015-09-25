@@ -313,7 +313,7 @@ class ConferenceApi(remote.Service):
 
     @endpoints.method(SESSION_FILTER_REQUEST, SessionForms,
                       path='conference/sessions/filter',
-                      http_method='GET', name='getFilterSessions')
+                      http_method='GET', name='filterSessions')
     def queryProblem(self, request):
         """Filter sessions by time of the day and type of session."""
         sessions = Session.query()
