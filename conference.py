@@ -99,6 +99,13 @@ SESSION_DURATION_REQUEST = endpoints.ResourceContainer(
     end_duration=messages.IntegerField(2)
 )
 
+SESSION_FILTER_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    allowed_types=messages.StringField(1, repeated=True),
+    start_hour=messages.IntegerField(2),
+    end_hour=messages.IntegerField(3)
+)
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -284,7 +291,7 @@ class ConferenceApi(remote.Service):
             ]
         )
 
-    @endpoints.method(SESSION_DURATION_REQUET, SessionForms,
+    @endpoints.method(SESSION_DURATION_REQUEST, SessionForms,
                       path='conference/sessions/duration',
                       http_method='GET', name='getSessionsByDuration')
     def getSessionsByDuration(self, request):
@@ -297,6 +304,22 @@ class ConferenceApi(remote.Service):
             Session.duration <= request.end_duration
         )
         sessions = sessions.order(Session.duration)
+        sessions = sessions.order(Session.startTime)
+        return SessionForms(
+            items=[
+                process.sessions.copySessionToForm(sess) for sess in sessions
+            ]
+        )
+
+    @endpoints.method(SESSION_FILTER_REQUEST, SessionForms,
+                      path='conference/sessions/filter',
+                      http_method='GET', name='getFilterSessions')
+    def queryProblem(self, request):
+        sessions = Session.query()
+        for typeOfSession in request.allowed_types:
+            sessions = sessions.filter(Session.typeOfSession == typeOfSession)
+        sessions = sessions.filter(Session.startTime >= request.start_hour)
+        sessions = sessions.filter(Session.startTime <= request.end_hour)
         sessions = sessions.order(Session.startTime)
         return SessionForms(
             items=[

@@ -97,16 +97,6 @@ indexes:
 
 - kind: Session
   properties:
-  - name: typeOfSession
-  - name: startTime
-
-- kind: Session
-  properties:
-  - name: speakerId
-  - name: startTime
-
-- kind: Session
-  properties:
   - name: date
   - name: startTime
 
@@ -117,8 +107,19 @@ indexes:
 
 - kind: Session
   properties:
+  - name: highlights
+  - name: typeOfSession
+
+- kind: Session
+  properties:
   - name: name
   - name: highlights
+
+- kind: Session
+  properties:
+  - name: name
+  - name: highlights
+  - name: typeOfSession
 
 - kind: Session
   properties:
@@ -127,11 +128,10 @@ indexes:
 
 - kind: Session
   properties:
-  - name: highlights
-  - name: typeOfSession
+  - name: speakerId
+  - name: startTime
 
 - kind: Session
   properties:
-  - name: name
-  - name: highlights
   - name: typeOfSession
+  - name: startTime
