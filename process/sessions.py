@@ -31,6 +31,7 @@ def copySessionToForm(sess):
     return ss
 
 def createSessionObject(request):
+    """Create a new Session object. Returns SessionForm/request."""
     # preload necessary data items
     user = endpoints.get_current_user()
     if not user:

@@ -9,6 +9,7 @@ MEMCACHE_FEATURED_SPEAKER_KEY = "FEATURED_SPEAKER"
 
 
 def cacheSpeaker():
+    """Save featured Speaker in memcache. Used on a task queue."""
     speakers = models.Speaker.query()
     featured_speaker = ''
     max_sessions = 0

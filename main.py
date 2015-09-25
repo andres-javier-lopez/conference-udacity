@@ -40,6 +40,7 @@ class SendConfirmationEmailHandler(webapp2.RequestHandler):
 
 class SetFeaturedSpeaker(webapp2.RequestHandler):
     def post(self):
+        """Set Featured Speaker in memchache."""
         process.speakers.cacheSpeaker()
 
 app = webapp2.WSGIApplication([

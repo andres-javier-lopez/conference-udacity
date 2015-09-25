@@ -97,6 +97,7 @@ def createConferenceObject(request):
 
 @ndb.transactional()
 def updateConferenceObject(request):
+    """Updates selected Conference object. Returns ConferenceForm/Request"""
     user = endpoints.get_current_user()
     if not user:
         raise endpoints.UnauthorizedException('Authorization required')

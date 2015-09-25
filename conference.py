@@ -315,6 +315,7 @@ class ConferenceApi(remote.Service):
                       path='conference/sessions/filter',
                       http_method='GET', name='getFilterSessions')
     def queryProblem(self, request):
+        """Filter sessions by time of the day and type of session."""
         sessions = Session.query()
         for typeOfSession in request.allowed_types:
             sessions = sessions.filter(Session.typeOfSession == typeOfSession)
@@ -356,6 +357,7 @@ class ConferenceApi(remote.Service):
                       path='addSessionToWishlist/{websafeSessionKey}',
                       http_method='POST', name='addSessionToWishlist')
     def addSessionToWishlist(self, request):
+        """Add a session to user Wishlist."""
         prof = process.profiles.getProfileFromUser()
 
         session = ndb.Key(urlsafe=request.websafeSessionKey).get()
@@ -372,6 +374,7 @@ class ConferenceApi(remote.Service):
                       path='wishlist', http_method='GET',
                       name='getSessionsWishlist')
     def getSessionsInWishlist(self, request):
+        """List sessions saved on user Wishlist."""
         prof = process.profiles.getProfileFromUser()
         sess_keys = [ndb.Key(urlsafe=wsck) for wsck in prof.sessionsWishlist]
         sessions = ndb.get_multi(sess_keys)
