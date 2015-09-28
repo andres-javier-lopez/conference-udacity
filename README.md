@@ -39,9 +39,9 @@ extended functionality based on the project 4 requirements.
    speakers are created on session creation when no other speaker with the same
    name exists, and the websafe key is stored on the Session.
 
-   The featured speaker is calculated as the speaker with the higher number of
-   sessions. After a session is created a task is queued to verify who is the
-   speaker with the highest number of sessions, and is stored on memcache as
+   If at the moment of session creation a speaker has two or more sessions in
+   the selected conference, that speaker is set as the featured speaker. After
+   a session is created a task is queued to verify if the current speaker is
    the featured speaker.
 
    Sessions can be filtered by typeOfSession, that currently is a simple String
@@ -89,12 +89,11 @@ extended functionality based on the project 4 requirements.
     two inequality filters, one for sessions that are NOT workshops and the
     other one for sessions before a specified time.
 
-    To avoid this problem, the query has been refactored as to show only the
-    selected types of sessions within the specified hours. The fronted of the
-    application should list all the available types of sessions, and the user
-    will select only the ones he or she is interested in, avoiding the other
-    ones like the workshop. If no types of sessions are selected, all the types
-    of sessions will be shown.
+    To avoid this problem, the inequality filter used is the one for time of the
+    day, and then the results are sorted by python excluding all that are of the
+    provided type. This is achieved by a for loop that iterates all the queries,
+    adding the ones that are not in the filter to the items array, and excluding
+    the others.
 
     This query has been implemented as the filterQuery endpoint.
 

@@ -12,23 +12,24 @@ import utils
 
 def copySessionToForm(sess):
     """Copy relevant fields from Session to SessionForm."""
-    ss = models.SessionForm()
-    for field in ss.all_fields():
+    session = models.SessionForm()
+    for field in session.all_fields():
         if hasattr(sess, field.name):
             # convert Date to date string; just copy others
             if field.name == 'date':
-                setattr(ss, field.name, str(getattr(sess, field.name)))
+                setattr(session, field.name, str(getattr(sess, field.name)))
             else:
-                setattr(ss, field.name, getattr(sess, field.name))
+                setattr(session, field.name, getattr(sess, field.name))
+            # get name of speaker based on its id
             if field.name == 'speakerId':
                 s_id = getattr(sess, field.name)
                 if s_id:
                     speaker = ndb.Key(urlsafe=s_id).get()
                     if speaker:
-                        ss.speaker = speaker.name
-            ss.websafeKey = sess.key.urlsafe()
-    ss.check_initialized()
-    return ss
+                        session.speaker = speaker.name
+            session.websafeKey = sess.key.urlsafe()
+    session.check_initialized()
+    return session
 
 def createSessionObject(request):
     """Create a new Session object. Returns SessionForm/request."""
@@ -38,15 +39,13 @@ def createSessionObject(request):
         raise endpoints.UnauthorizedException('Authorization required')
     user_id = utils.getUserId(user)
 
+    # check that user is owner
+    if user_id != conf.organizerUserId:
+        raise endpoints.ForbiddenException(
+            'Only the owner can create a session.')
+
     if not request.name:
         raise endpoints.BadRequestException("Session 'name' field required")
-
-    # copy SessionForm/ProtoRPC Message into dict
-    data = {}
-    for field in request.all_fields():
-        data[field.name] = getattr(request, field.name)
-    del data['websafeConferenceKey']
-    del data['websafeKey']
 
     # update existing conference
     conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
@@ -55,15 +54,20 @@ def createSessionObject(request):
         raise endpoints.NotFoundException(
             'No conference found with key: %s' % request.websafeConferenceKey)
 
-    # check that user is owner
-    if user_id != conf.organizerUserId:
-        raise endpoints.ForbiddenException(
-            'Only the owner can create a session.')
+    # copy SessionForm/ProtoRPC Message into dict
+    data = {}
+    for field in request.all_fields():
+        data[field.name] = getattr(request, field.name)
+    del data['websafeConferenceKey']
+    del data['websafeKey']
 
     # convert dates from strings to Date objects
     if data['date']:
         data['date'] = datetime.strptime(data['date'][:10], "%Y-%m-%d").date()
 
+    # If the request contains a speaker name, first query the database to see if the speaker already exists
+    # If not create a new entity
+    # Clean up by deleting the speaker name from the data dictionary
     if data['speaker']:
         speaker = models.Speaker.query(
             models.Speaker.name == data['speaker']
@@ -75,7 +79,7 @@ def createSessionObject(request):
             data['speakerId'] = sp_key.urlsafe()
         else:
             data['speakerId'] = speaker.key.urlsafe()
-        del data['speaker']
+    del data['speaker']
 
     c_key = conf.key
     s_id = models.Session.allocate_ids(size=1, parent=c_key)[0]
@@ -83,7 +87,10 @@ def createSessionObject(request):
     data['key'] = s_key
 
     models.Session(**data).put()
-    taskqueue.add(
+    taskqueue.add(params={
+            'conferenceKey': c_key.urlsafe(),
+            'speakerKey': data['speakerId']
+        },
         url='/tasks/set_featured_speaker'
     )
     return copySessionToForm(s_key.get())

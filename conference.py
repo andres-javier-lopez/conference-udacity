@@ -35,6 +35,7 @@ from models import Session
 from models import SessionForm
 from models import SessionForms
 from models import SessionQueryForm
+from models import SessionQueryForms
 from models import Speaker
 
 from settings import WEB_CLIENT_ID
@@ -95,13 +96,13 @@ SESSION_DATE_REQUEST = endpoints.ResourceContainer(
 
 SESSION_DURATION_REQUEST = endpoints.ResourceContainer(
     message_types.VoidMessage,
-    start_duration=messages.IntegerField(1),
-    end_duration=messages.IntegerField(2)
+    min_duration=messages.IntegerField(1),
+    max_duration=messages.IntegerField(2)
 )
 
 SESSION_FILTER_REQUEST = endpoints.ResourceContainer(
     message_types.VoidMessage,
-    allowed_types=messages.StringField(1, repeated=True),
+    not_type=messages.StringField(1, repeated=True),
     start_hour=messages.IntegerField(2),
     end_hour=messages.IntegerField(3)
 )
@@ -255,7 +256,7 @@ class ConferenceApi(remote.Service):
         )
 
     @endpoints.method(SESSION_SPEAKER_REQUEST, SessionForms,
-                      path='conference/speaker/{speaker}',
+                      path='conference/sessions/speaker/{speaker}',
                       http_method='GET', name='getConferenceBySpeaker')
     def getSessionsBySpeaker(self, request):
         """List of the sessions by the selected Speaker."""
@@ -285,7 +286,7 @@ class ConferenceApi(remote.Service):
             ).date()
         )
         sessions.order(Session.startTime)
-        return SessionsForms(
+        return SessionForms(
             items=[
                 process.sessions.copySessionToForm(sess) for sess in sessions
             ]
@@ -298,10 +299,10 @@ class ConferenceApi(remote.Service):
         """List of sessions within the specified duration."""
         sessions = Session.query()
         sessions = sessions.filter(
-            Session.duration >= request.start_duration
+            Session.duration >= request.min_duration
         )
         sessions = sessions.filter(
-            Session.duration <= request.end_duration
+            Session.duration <= request.max_duration
         )
         sessions = sessions.order(Session.duration)
         sessions = sessions.order(Session.startTime)
@@ -317,18 +318,18 @@ class ConferenceApi(remote.Service):
     def queryProblem(self, request):
         """Filter sessions by time of the day and type of session."""
         sessions = Session.query()
-        for typeOfSession in request.allowed_types:
-            sessions = sessions.filter(Session.typeOfSession == typeOfSession)
         sessions = sessions.filter(Session.startTime >= request.start_hour)
         sessions = sessions.filter(Session.startTime <= request.end_hour)
         sessions = sessions.order(Session.startTime)
+        items = []
+        for sess in sessions:
+            if sess.typeOfSession not in request.not_type:
+                item.append(process.sessions.copySessionToForm(sess))
         return SessionForms(
-            items=[
-                process.sessions.copySessionToForm(sess) for sess in sessions
-            ]
+            items=items
         )
 
-    @endpoints.method(SessionQueryForm, SessionForms,
+    @endpoints.method(SessionQueryForms, SessionForms,
                       path='conference/sessions/query',
                       http_method='GET', name='querySessions')
     def querySessions(self, request):
@@ -364,6 +365,10 @@ class ConferenceApi(remote.Service):
         if not session:
             raise endpoints.NotFoundException(
                 'Session Not Found'
+            )
+        if not isinstance(session, Session):
+            raise endpoints.BadRequestException(
+                'Element provided is not a Session'
             )
 
         prof.sessionsWishlist.append(request.websafeSessionKey)

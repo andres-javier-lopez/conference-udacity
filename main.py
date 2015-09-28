@@ -41,7 +41,7 @@ class SendConfirmationEmailHandler(webapp2.RequestHandler):
 class SetFeaturedSpeaker(webapp2.RequestHandler):
     def post(self):
         """Set Featured Speaker in memchache."""
-        process.speakers.cacheSpeaker()
+        process.speakers.cacheSpeaker(self.request)
 
 app = webapp2.WSGIApplication([
     ('/crons/set_announcement', SetAnnouncementHandler),

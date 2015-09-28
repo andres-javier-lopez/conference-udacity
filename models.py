@@ -122,18 +122,6 @@ class Session(ndb.Model):
     startTime = ndb.IntegerProperty()
 
 
-class SessionQueryForm(messages.Message):
-    """SessionQueryForm -- Session query inbound form message"""
-    field = messages.StringField(1)
-    operator = messages.StringField(2)
-    value = messages.StringField(3)
-
-
-class Speaker(ndb.Model):
-    """Speaker -- Speaker object"""
-    name = ndb.StringProperty(required=True)
-
-
 class SessionForm(messages.Message):
     """SessionForm -- Session outbound form message"""
     name = messages.StringField(1)
@@ -150,3 +138,25 @@ class SessionForm(messages.Message):
 class SessionForms(messages.Message):
     """SessionForms -- Multiple outbound Session form message"""
     items = messages.MessageField(SessionForm, 1, repeated=True)
+
+
+class SessionQueryForm(messages.Message):
+    """SessionQueryForm -- Session query inbound form message"""
+    field = messages.StringField(1)
+    operator = messages.StringField(2)
+    value = messages.StringField(3)
+
+
+class SessionQueryForms(messages.Message):
+    """SessionQueryForms -- multiple SessionQueryForm inbound form message"""
+    filters = messages.MessageField(SessionQueryForm, 1, repeated=True)
+
+
+class Speaker(ndb.Model):
+    """Speaker -- Speaker object"""
+    name = ndb.StringProperty(required=True)
+
+
+class SpeakerForm(messages.Message):
+    """SpeakerForm -- Speaker outbound form message"""
+    name = messages.StringField(1)
