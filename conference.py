@@ -324,7 +324,7 @@ class ConferenceApi(remote.Service):
         items = []
         for sess in sessions:
             if sess.typeOfSession not in request.not_type:
-                item.append(process.sessions.copySessionToForm(sess))
+                items.append(process.sessions.copySessionToForm(sess))
         return SessionForms(
             items=items
         )

@@ -42,7 +42,7 @@ def createSessionObject(request):
     # update existing conference
     conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
     # check that conference exists
-    if not conf:
+    if not conf or not isinstance(conf, models.Conference):
         raise endpoints.NotFoundException(
             'No conference found with key: %s' % request.websafeConferenceKey)
 
@@ -87,12 +87,13 @@ def createSessionObject(request):
     data['key'] = s_key
 
     models.Session(**data).put()
-    taskqueue.add(params={
-            'conferenceKey': c_key.urlsafe(),
-            'speakerKey': data['speakerId']
-        },
-        url='/tasks/set_featured_speaker'
-    )
+    if data['speakerId']:
+        taskqueue.add(params={
+                'conferenceKey': c_key.urlsafe(),
+                'speakerKey': data['speakerId']
+            },
+            url='/tasks/set_featured_speaker'
+        )
     return copySessionToForm(s_key.get())
 
 

@@ -18,6 +18,10 @@ def cacheSpeaker(request):
     conference = ndb.Key(urlsafe=c_key).get()
     speaker = ndb.Key(urlsafe=sp_key).get()
 
+    # if no speaker is selected, return an empty string and finish the task
+    if not speaker:
+        return ''
+
     # get all the sessions for the conference
     sessions = models.Session.query(ancestor=conference.key)
 
