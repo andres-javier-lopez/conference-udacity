@@ -19,11 +19,11 @@ def cacheSpeaker(request):
     speaker = ndb.Key(urlsafe=sp_key).get()
 
     # get all the sessions for the conference
-    sessions = Session.query(ancestor=conference.key)
+    sessions = models.Session.query(ancestor=conference.key)
 
     # get the total number of sessions of the current speaker in the conference
     total_sessions = 0
-    sessions_names = []
+    session_names = []
     for session in sessions:
         if session.speakerId == sp_key:
             total_sessions += 1
@@ -33,7 +33,7 @@ def cacheSpeaker(request):
     # selected as the featured speaker
     if total_sessions > 1:
         feature = 'Featured Speaker on %s conference: %s on sessions %s' % (
-            conference.name, speaker.name, ''.join(session_names, ', ')
+            conference.name, speaker.name, ', '.join(session_names)
         )
         memcache.set(MEMCACHE_FEATURED_SPEAKER_KEY, feature)
     else:

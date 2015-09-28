@@ -39,6 +39,13 @@ def createSessionObject(request):
         raise endpoints.UnauthorizedException('Authorization required')
     user_id = utils.getUserId(user)
 
+    # update existing conference
+    conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+    # check that conference exists
+    if not conf:
+        raise endpoints.NotFoundException(
+            'No conference found with key: %s' % request.websafeConferenceKey)
+
     # check that user is owner
     if user_id != conf.organizerUserId:
         raise endpoints.ForbiddenException(
@@ -46,13 +53,6 @@ def createSessionObject(request):
 
     if not request.name:
         raise endpoints.BadRequestException("Session 'name' field required")
-
-    # update existing conference
-    conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
-    # check that conference exists
-    if not conf:
-        raise endpoints.NotFoundException(
-            'No conference found with key: %s' % request.websafeConferenceKey)
 
     # copy SessionForm/ProtoRPC Message into dict
     data = {}
